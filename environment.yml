@@ -5,7 +5,7 @@ dependencies:
  - python=3.7*
  - pip=20
  - dask
- - dask_jobqueue
+ - dask-jobqueue
  - fsspec
  - gcsfs
  - geopandas
