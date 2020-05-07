@@ -9,12 +9,14 @@ import shutil
 
 def csv_to_dss(csv_filename: str,
                output_path: str = None,
-               nom_sim: str = None):
+               nom_sim: str = None,
+               start_date: str = "01JAN2001 00:00:00"):
     """
 
     :param csv_filename:
-    :param nom_sim:
     :param output_path:
+    :param nom_sim:
+    :param start_date:
     :return:
     """
 
@@ -43,7 +45,7 @@ def csv_to_dss(csv_filename: str,
     # Prepare time-series data
     df = pd.read_csv(csv_filename)
     tsc = TimeSeriesContainer()
-    tsc.startDateTime = "01JAN2001 00:00:00"
+    tsc.startDateTime = start_date
     tsc.numberValues = df.shape[0]
     tsc.units = "cfs"
     tsc.type = "INST"
