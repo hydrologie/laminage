@@ -14,7 +14,7 @@ Git et Anaconda/Miniconda doivent préalablement être installé
 
 ```bash
 git clone https://github.com/hydrologie/laminage.git
-cd sefm
+cd laminage
 
 conda env update --name laminage --file environment.yml
 ```
