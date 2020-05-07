@@ -7,9 +7,9 @@ import errno
 import shutil
 
 
-def csv_to_dss(csv_filename,
-               output_path=None,
-               nom_sim=None):
+def csv_to_dss(csv_filename: str,
+               output_path: str = None,
+               nom_sim: str = None):
     """
 
     :param csv_filename:
