@@ -1,0 +1,26 @@
+name: laminage
+channels:
+ - conda-forge
+dependencies:
+ - python=3.7*
+ - pip=20
+ - dask
+ - dask_jobqueue
+ - fsspec
+ - gcsfs
+ - geopandas
+ - holoviews
+ - hvplot
+ - ipywidgets
+ - ipyleaflet
+ - jupyter-panel-proxy
+ - matplotlib-base
+ - numpy
+ - pandas
+ - panel
+ - scipy
+ - pip :
+    -  https://github.com/gyanz/pydsstools/zipball/master
+    -  https://github.com/gyanz/dssvue/zipball/master
+
+
