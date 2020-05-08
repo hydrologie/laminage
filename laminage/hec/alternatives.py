@@ -28,7 +28,7 @@ class CreationAlternative:
 
     Examples
         --------
-        Constructing DataFrame from a dictionary.
+        Constructing CreationAlternative object.
         >> dss_filename = '0000001.dss'
         >> output_path = 'output_path'
         >> type_series = 'STO'
