@@ -16,7 +16,7 @@ class CreationAlternative:
         Specific dss name of dss filename
     type_series : str
         Options available : FREQ (frequential analysis study),
-                            CMP (maximum probable flood study),
+                            PMF (probable maximum flood study),
                             HIST (historical time-series study),
                             STO (stochastical analysis study)
     keys_link : dict
@@ -26,32 +26,7 @@ class CreationAlternative:
     alternative_name : str
         Equivalent alternative name in HEC ResSim nomenclature (10 caracters)
 
-    """
-    def __init__(self,
-                 dss_filename: str,
-                 output_path: str = None,
-                 type_series: str = None,
-                 keys_link: dict = {},
-                 ):
-        """
-
-        Parameters
-        ----------
-        dss_filename : str
-            Complete or relative path of dss filename
-        output_path : str, default None
-            Folder directory to output alternatives files
-        type_series : str, default None
-            Options available : FREQ (frequential analysis study),
-                                CMP (maximum probable flood study),
-                                HIST (historical time-series study),
-                                STO (stochastical analysis study)
-        keys_link : dict, default {}
-            Dictionary to link dss inflows with Hec ResSim's nomenclature
-            Keys correspond to inflow names in Hec ResSim's model
-            while values correspond to dss inflow names
-
-        Examples
+    Examples
         --------
         Constructing DataFrame from a dictionary.
         >> dss_filename = '0000001.dss'
@@ -85,6 +60,32 @@ class CreationAlternative:
                           output_path=output_path,
                           type_series=type_series,
                           keys_link=keys_link)
+        """
+
+    def __init__(self,
+                 dss_filename: str,
+                 output_path: str = None,
+                 type_series: str = None,
+                 keys_link: dict = {},
+                 ):
+        """
+
+        Parameters
+        ----------
+        dss_filename : str
+            Complete or relative path of dss filename
+        output_path : str, default None
+            Folder directory to output alternatives files
+        type_series : str, default None
+            Options available : FREQ (frequential analysis study),
+                                CMP (maximum probable flood study),
+                                HIST (historical time-series study),
+                                STO (stochastical analysis study)
+        keys_link : dict, default {}
+            Dictionary to link dss inflows with Hec ResSim's nomenclature
+            Keys correspond to inflow names in Hec ResSim's model
+            while values correspond to dss inflow names
+
         """
         self.dss_filename: str = dss_filename
         self.dss_name: str = os.path.splitext(os.path.basename(self.dss_filename))[0]
