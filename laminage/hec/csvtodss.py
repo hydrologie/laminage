@@ -11,18 +11,18 @@ def csv_to_dss(csv_filename: str,
                sim_name: str = None,
                start_date: str = "01JAN2001 00:00:00"):
     """
-    Converts csv file to equivalent file in dss format
+    Converts csv file to equivalent file in hec format
 
     Parameters
     ----------
     csv_filename : str
         Complete or relative path of csv filename
     output_path : str, default None
-        Folder directory to ouput converted dss files
+        Folder directory to ouput converted hec files
     sim_name : str, default None
         Alternative name of output file
     start_date : str, default "01JAN2001 00:00:00"
-        Start date associated with first row of data in csv_filename
+        Start date associated with first row of data in csv filename
     Returns
     -------
     None
@@ -43,11 +43,11 @@ def csv_to_dss(csv_filename: str,
                 raise
 
     dss_filename = os.path.join(output_path,
-                                sim_name + '.dss')
+                                sim_name + '.hec')
 
-    # copy empty.dss to dss_filename
+    # copy empty.hec to dss_filename
     shutil.copy2(os.path.join(os.path.dirname(__file__),
-                 'empty.dss'),
+                 'empty.hec'),
                  dss_filename)
 
     # Prepare time-series data
@@ -59,7 +59,7 @@ def csv_to_dss(csv_filename: str,
     tsc.type = "INST"
     tsc.interval = 1 * 60
     fid = HecDss.Open(dss_filename)
-    # add each column time-series from dataframe to dss
+    # add each column time-series from dataframe to hec
     for column in df:
         pathname = "/{}/{}///1DAY/{}/".format(sim_name, column, sim_name)
         tsc.pathname = pathname
