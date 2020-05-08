@@ -47,7 +47,8 @@ def csv_to_dss(csv_filename: str,
 
     # copy empty.hec to dss_filename
     shutil.copy2(os.path.join(os.path.dirname(__file__),
-                 'empty.hec'),
+                              'templates',
+                              'empty.hec'),
                  dss_filename)
 
     # Prepare time-series data
