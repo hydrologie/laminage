@@ -1,4 +1,5 @@
 import os
+import errno
 
 
 class CreationAlternative:
@@ -94,6 +95,13 @@ class CreationAlternative:
         self.keys_link: dict = keys_link
         self.alternative_name = self.get_alternative_name()
 
+        if not os.path.isdir(self.output_path):
+            try:
+                os.makedirs(self.output_path)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
+
     def get_alternative_name(self):
         """
 
@@ -153,3 +161,8 @@ class CreationAlternative:
         -------
 
         """
+
+    def create_all(self):
+        self.creation_fits()
+        self.creation_obs()
+        # self.creation_simrun()
