@@ -1,4 +1,3 @@
-from datetime import datetime
 from pydsstools.heclib.dss import HecDss
 from pydsstools.core import TimeSeriesContainer, UNDEFINED
 import os
@@ -9,22 +8,32 @@ import shutil
 
 def csv_to_dss(csv_filename: str,
                output_path: str = None,
-               nom_sim: str = None,
+               sim_name: str = None,
                start_date: str = "01JAN2001 00:00:00"):
     """
+    Converts csv file to equivalent file in dss format
 
-    :param csv_filename:
-    :param output_path:
-    :param nom_sim:
-    :param start_date:
-    :return:
+    Parameters
+    ----------
+    csv_filename : str
+        Complete or relative path of csv filename
+    output_path : str, default None
+        Folder directory to ouput converted dss files
+    sim_name : str, default None
+        Alternative name of output file
+    start_date : str, default "01JAN2001 00:00:00"
+        Start date associated with first row of data in csv_filename
+    Returns
+    -------
+    None
+
     """
 
     if output_path is None:
         output_path = os.path.dirname(csv_filename)
 
-    if nom_sim is None:
-        nom_sim = os.path.splitext(os.path.basename(csv_filename))[0]
+    if sim_name is None:
+        sim_name = os.path.splitext(os.path.basename(csv_filename))[0]
 
     if not os.path.isdir(output_path):
         try:
@@ -34,8 +43,7 @@ def csv_to_dss(csv_filename: str,
                 raise
 
     dss_filename = os.path.join(output_path,
-                                nom_sim + '.dss')
-    print(dss_filename)
+                                sim_name + '.dss')
 
     # copy empty.dss to dss_filename
     shutil.copy2(os.path.join(os.path.dirname(__file__),
@@ -53,7 +61,7 @@ def csv_to_dss(csv_filename: str,
     fid = HecDss.Open(dss_filename)
     # add each column time-series from dataframe to dss
     for column in df:
-        pathname = "/{}/{}///1DAY/{}/".format(nom_sim, column, nom_sim)
+        pathname = "/{}/{}///1DAY/{}/".format(sim_name, column, sim_name)
         tsc.pathname = pathname
         tsc.values = df[column].values
         fid.deletePathname(tsc.pathname)
