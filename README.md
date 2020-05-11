@@ -4,8 +4,10 @@ laminage est un programme permettant de simuler des centaines de milliers de sé
 
 
 ## Gestion de projet
-- [X] [Conversion des fichiers csv vers dss en parallèle](notebooks/Conversion_csv_vers_dss.ipynb) 
-- [ ] [Création des alternatives en parallèle](notebooks) (**en cours**)
+- [X] Conversion des fichiers csv vers dss en parallèle
+- [ ] Création des alternatives en parallèle (**en cours**)
+
+- Exemple d'une simulation complète : [note de calcul](notebooks/Preparation_et_simulation_HEC_ResSim_stochastique.ipynb) (**en cours**)
 
 
 ## Installation et configuration de l'environnement
