@@ -81,7 +81,7 @@ class CreationAlternative:
             Options available : FREQ (frequential analysis study),
                                 CMP (maximum probable flood study),
                                 HIST (historical time-series study),
-                                STO (stochastical analysis study)
+                                STO (stochastic analysis study)
         keys_link : dict, default {}
             Dictionary to link dss inflows with Hec ResSim's nomenclature
             Keys correspond to inflow names in Hec ResSim's model
@@ -104,9 +104,7 @@ class CreationAlternative:
 
     def get_alternative_name(self):
         """
-
-        Returns
-        -------
+        Transform name to HEC DSSVue nomenclature (10 characters)
 
         """
         if self.type_series == 'STO':
@@ -115,9 +113,7 @@ class CreationAlternative:
 
     def creation_fits(self):
         """
-
-        Returns
-        -------
+        Creates .fits file required as part as an alternative
 
         """
         output_file = os.path.join(self.output_path,
@@ -142,9 +138,7 @@ class CreationAlternative:
 
     def creation_obs(self):
         """
-
-        Returns
-        -------
+        Creates .obs file required as part as an alternative
 
         """
         output_file = os.path.join(self.output_path,
@@ -154,13 +148,49 @@ class CreationAlternative:
             print('Description=(Observed TS Data Set)\n', file=text_file)
             print('_type=0\nParentPath=null\nParentClass=null', file=text_file)
 
-    def creation_simrun(self):
+    def creation_simrun(self,
+                        idx_sim_run: str,
+                        idx_malt: str,
+                        mod_time: str
+                        ):
         """
+        Creates .simrun file required as part as an alternative
 
-        Returns
-        -------
+        Parameters
+        ----------
+        idx_sim_run (str)
+            Index of sim. run (file) in .conf file for this alternative
+        idx_malt (str)
+            Index of malt (file) in .conf file for this alternative
+        mod_time (str)
+            Time at creation of file in seconds
 
         """
+        output_file = os.path.join(self.output_path,
+                                   self.alternative_name + '.simrun')
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               'templates',
+                               'simruntemplate.txt'), 'r') as f:
+            lines = f.readlines()
+
+        with open(output_file, 'w') as text_file:
+            for i, line in enumerate(lines, 1):  # numbering starts at 1
+                if i == 5:
+                    print("  STR={}".format(self.alternative_name), file=text_file)
+                elif i == 9:
+                    print('  I={}'.format(idx_sim_run), file=text_file)
+                elif i == 15:
+                    print('  J='.format(mod_time), file=text_file)
+                elif i == 17:
+                    print('  STR={}'.format(self.alternative_name), file=text_file)
+                elif i == 27:
+                    print('        STR={}'.format(self.alternative_name), file=text_file)
+                elif i == 33:
+                    print('        I={}'.format(idx_malt), file=text_file)
+                else:
+                    print('{}'.format(line), file=text_file)
+
 
     def create_all(self):
         self.creation_fits()
