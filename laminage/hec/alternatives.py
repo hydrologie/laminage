@@ -119,7 +119,7 @@ class CreationAlternative:
     def create_config(self,
                       config_file) -> str:
         """
-        Create a new configuration file
+        Creates a new configuration file
 
         Parameters
         ----------
@@ -153,7 +153,7 @@ class CreationAlternative:
 
     def update_config(self) -> list:
         """
-        Update configuration file with relevent indexes for current alternative
+        Updates configuration file with relevant indexes for current alternative
 
         Parameters
         ----------
