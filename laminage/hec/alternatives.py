@@ -67,7 +67,7 @@ class CreationAlternative:
                  dss_filename: str,
                  output_path: str = None,
                  type_series: str = None,
-                 keys_link: dict = {},
+                 keys_link: dict = None,
                  ):
         """
 
@@ -88,10 +88,13 @@ class CreationAlternative:
             while values correspond to dss inflow names
 
         """
+        if keys_link is None:
+            keys_link = {}
+
         self.dss_filename: str = dss_filename
         self.dss_name: str = os.path.splitext(os.path.basename(self.dss_filename))[0]
         self.output_path: str = output_path
-        self.type_series:  str = type_series
+        self.type_series: str = type_series
         self.keys_link: dict = keys_link
         self.alternative_name = self.get_alternative_name()
 
@@ -104,12 +107,136 @@ class CreationAlternative:
 
     def get_alternative_name(self):
         """
-        Transform name to HEC DSSVue nomenclature (10 characters)
+        Transforms name to HEC DSSVue nomenclature (10 characters)
 
         """
+        name = None
+
         if self.type_series == 'STO':
             name = "M" + "{:09d}".format(int(self.dss_name))
         return name
+
+    def create_config(self,
+                      config_file) -> str:
+        """
+
+        Parameters
+        ----------
+        config_file (str)
+            Path of config file
+
+        Returns
+        -------
+        idx_sim_run (str)
+            Index of sim. run (file) in .conf file for this alternative
+        idx_malt (str)
+            Index of malt (file) in .conf file for this alternative
+        idx_ralt (str)
+            Index of ralt (file) in .conf file for this alternative
+        mod_time (str)
+            Time at creation of file in seconds
+        """
+
+        # create a clean copy from original config file
+        with open(os.path.join(config_file), 'r') as f:
+            lines = f.readlines()
+
+        end_header_position = [idx for idx, s in enumerate(lines) if "ManagerProxyEnd" in s][0]
+        new_config_lines = lines[0:end_header_position + 1]
+
+        with open(os.path.join(self.output_path,
+                               'rss.conf'), "w") as output:
+            for row in new_config_lines:
+                output.write(str(row))
+        return os.path.join(self.output_path, 'rss.conf')
+
+    def update_config(self) -> list:
+        """
+
+        Parameters
+        ----------
+        config_tmp_file (str)
+            Path of config file
+
+        Returns
+        -------
+        idx_sim_run (str)
+            Index of sim. run (file) in .conf file for this alternative
+        idx_malt (str)
+            Index of malt (file) in .conf file for this alternative
+        idx_ralt (str)
+            Index of ralt (file) in .conf file for this alternative
+        mod_time (str)
+            Time at creation of file in seconds
+        """
+
+        # create a clean copy from original config file
+        with open(os.path.join(self.output_path,
+                               'rss.conf'), 'r') as f:
+            lines = f.readlines()
+
+        modified_time = int([s for idx, s in enumerate(lines) if "ModifiedTime" in s][-1].split('=')[-1].rstrip())
+        index = int([s for idx, s in enumerate(lines) if "Index" in s][-1].split('=')[-1].rstrip())
+
+        idx_ralt = index + 1
+        idx_fits = index + 2
+        idx_obs = index + 3
+        idx_malt = index + 4
+        idx_simrun = index + 5
+        mod_time = modified_time + 250
+
+        ralt_lines = ['\nManagerProxyBegin',
+                      'Name={}'.format(self.alternative_name),
+                      'Description=',
+                      'Path=rss/{}.ralt'.format(self.alternative_name),
+                      'Class=hec.model.RssAlt',
+                      'Index={}'.format(idx_ralt),
+                      'ModifiedTime={}'.format(str(modified_time + 50)),
+                      'ManagerProxyEnd\n']
+
+        fits_lines = ['ManagerProxyBegin',
+                      'Name={}'.format(self.alternative_name),
+                      'Description=',
+                      'Path=rss/{}.fits'.format(self.alternative_name),
+                      'Class=hec.model.TSDataSet',
+                      'Index={}'.format(idx_fits),
+                      'ModifiedTime={}'.format(str(modified_time + 100)),
+                      'ManagerProxyEnd\n']
+
+        obs_lines = ['ManagerProxyBegin',
+                     'Name={}Obs'.format(self.alternative_name),
+                     'Description=',
+                     'Path=rss/{}Obs.fits'.format(self.alternative_name),
+                     'Class=hec.model.TSDataSet',
+                     'Index={}'.format(idx_obs),
+                     'ModifiedTime={}'.format(str(modified_time + 150)),
+                     'ManagerProxyEnd\n']
+
+        malt_lines = ['ManagerProxyBegin',
+                      'Name={}'.format(self.alternative_name),
+                      'Description=(Simulation Run)',
+                      'Path=rss/{}.malt'.format(self.alternative_name),
+                      'Class=hec.model.ModelAlt',
+                      'Index={}'.format(idx_malt),
+                      'ModifiedTime={}'.format(str(modified_time + 100)),
+                      'ManagerProxyEnd\n']
+
+        sim_run_lines = ['ManagerProxyBegin',
+                         'Name={}'.format(self.alternative_name),
+                         'Description=(Simulation Run)',
+                         'Path=rss/{}.simrun'.format(self.alternative_name),
+                         'Class=hec.model.RssSimRun',
+                         'Index={}'.format(idx_simrun),
+                         'ModifiedTime={}'.format(str(modified_time + 150)),
+                         'ManagerProxyEnd']
+
+        new_config_lines = ralt_lines + fits_lines + obs_lines + malt_lines + sim_run_lines
+
+        with open(os.path.join(self.output_path,
+                               'rss.conf'), "a") as output:
+            for row in new_config_lines:
+                output.write(str(row) + '\n')
+        return [idx_simrun, idx_malt, idx_ralt, mod_time]
 
     def creation_fits(self):
         """
@@ -171,7 +298,7 @@ class CreationAlternative:
 
         with open(os.path.join(os.path.dirname(__file__),
                                'templates',
-                               'simruntemplate.txt'), 'r') as f:
+                               'simrun_template.txt'), 'r') as f:
             lines = f.readlines()
 
         with open(output_file, 'w') as text_file:
@@ -191,8 +318,110 @@ class CreationAlternative:
                 else:
                     print('{}'.format(line), file=text_file)
 
+    def creation_malt(self,
+                      idx_ralt: str,
+                      idx_malt: str,
+                      mod_time: str
+                      ):
+        """
+        Creates .malt file required as part as an alternative
 
-    def create_all(self):
+        Parameters
+        ----------
+        idx_ralt (str)
+            Index of ralt (file) in .conf file for this alternative
+        idx_malt (str)
+            Index of malt (file) in .conf file for this alternative
+        mod_time (str)
+            Time at creation of file in seconds
+
+        """
+        output_file = os.path.join(self.output_path,
+                                   self.alternative_name + '.simrun')
+
+        with open(os.path.join(os.path.dirname(__file__),
+                               'templates',
+                               'malt_template.txt'), 'r') as f:
+            lines = f.readlines()
+
+        with open(output_file, 'w') as text_file:
+            for i, line in enumerate(lines, 1):  # numbering starts at 1
+                if i == 5:
+                    print("  STR={}".format(self.alternative_name), file=text_file)
+                elif i == 9:
+                    print('  I={}'.format(idx_malt), file=text_file)
+                elif i == 15:
+                    print('  J='.format(mod_time), file=text_file)
+                elif i == 34:
+                    print('  STR={}'.format(self.alternative_name), file=text_file)
+                elif i == 39:
+                    print('    I={}'.format(idx_ralt), file=text_file)
+                elif i == 45:
+                    print('    I={}'.format(idx_ralt), file=text_file)
+                else:
+                    print('{}'.format(line), file=text_file)
+
+    def creation_ralt(self,
+                      ralt_file: str,
+                      flow_compute_type: str = "2",
+                      ):
+        """
+        Creates .malt file required as part as an alternative
+
+        Parameters
+        ----------
+        ralt_file (str)
+            Path of ralt file
+        flow_compute_type (str), default "2"
+            HEC ResSim computing method : 0-Program determined 1-Per average 2-Instataneous
+        """
+
+        if not isinstance(flow_compute_type, str):
+            try:
+                str(flow_compute_type)
+            except TypeError:
+                print("flow_compute_type argument should be an integer")
+
+        output_file = os.path.join(self.output_path,
+                                   self.alternative_name + '.ralt')
+
+        with open(ralt_file, 'r') as f:
+            lines = f.readlines()
+
+        with open(output_file, 'w') as text_file:
+            for i, line in enumerate(lines, 1):  # numbering starts at 1
+                if i == 1:
+                    print("RssAlt Name={}".format(self.alternative_name), file=text_file)
+                elif i == 8:
+                    print('InputTSData Path=rss/{}.fits'.format(self.alternative_name), file=text_file)
+                elif i == 10:
+                    print('FlowComputeType={}'.format(flow_compute_type), file=text_file)
+                elif i == 16:
+                    print('ObservedTSData Path=rss/{}Obs.fits'.format(self.alternative_name), file=text_file)
+                else:
+                    print('{}'.format(line), file=text_file)
+
+    def add_alternative(self,
+                        ralt_file: str ):
+        """
+
+        Parameters
+        ----------
+        ralt_file (str)
+            Path of ralt file
+
+        Returns
+        -------
+
+        """
+        [idx_simrun, idx_malt, idx_ralt, mod_time] = self.update_config()
+
         self.creation_fits()
         self.creation_obs()
-        # self.creation_simrun()
+        self.creation_ralt(ralt_file)
+        self.creation_malt(idx_ralt=idx_ralt,
+                           idx_malt=idx_malt,
+                           mod_time=mod_time)
+        self.creation_simrun(idx_sim_run=idx_simrun,
+                             idx_malt=idx_malt,
+                             mod_time=mod_time)
