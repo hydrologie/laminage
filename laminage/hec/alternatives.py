@@ -61,6 +61,13 @@ class CreationAlternative:
                           output_path=output_path,
                           type_series=type_series,
                           keys_link=keys_link)
+        # Create new rss.conf file from source rss.conf - source rss.conf comes from base HEC ResSim model
+        >> source_rss_conf = 'rss.conf'
+        >> alt.create_config_from(source_rss_conf) # will be created in output_path
+        # Add current alternative to new rss_conf in output_path
+        # source_ralt_file is required to copy lookbacks from a base HEC ResSim model
+        >> source_ralt_file = ALT.ralt # comes from base HEC ResSim model
+        >> alt.add_alternative(source_ralt_file)
         """
 
     def __init__(self,
@@ -116,8 +123,8 @@ class CreationAlternative:
             name = "M" + "{:09d}".format(int(self.dss_name))
         return name
 
-    def create_config(self,
-                      config_file) -> str:
+    def create_config_from(self,
+                        config_file) -> str:
         """
         Creates a new configuration file
 
