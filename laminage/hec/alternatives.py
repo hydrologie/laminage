@@ -404,6 +404,7 @@ class CreationAlternative:
     def add_alternative(self,
                         ralt_file: str ):
         """
+        Add alternative files to output path and update configuration file
 
         Parameters
         ----------
