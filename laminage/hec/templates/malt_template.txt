@@ -1,0 +1,47 @@
+AsciiSerializer=4
+{=hec.model.ModelAlt
+  ID=0
+  FLD=_name
+  STR=10000P01DJ
+  FLD=_description
+  STR=
+  FLD=_index
+  I=326
+  FLD=_path
+  STR=
+  FLD=_nextTSRecordProxyIndex
+  I=0
+  FLD=_lastModifiedTime
+  J=1415737385907
+  FLD=_configurationIds
+  {=rma.util.LongVector
+    ID=1
+    FLD=elementData
+    {=[J
+      ID=2
+      {[=1
+      J=3,
+      }]
+    }
+    FLD=elementCount
+    I=1
+    FLD=capacityIncrement
+    I=0
+  }
+  FLD=_programIndex
+  I=1
+  FLD=_altId
+  STR=10000P01DJ
+  FLD=_modelRef
+  {=hec.lang.ModelReference
+    ID=3
+    FLD=id
+    I=323
+    FLD=className
+    STR=hec.rss.model.RssAlt
+    FLD=wkspName
+    STR=rss
+    FLD=newId
+    I=323
+  }
+}
