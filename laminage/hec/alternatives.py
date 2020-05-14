@@ -120,11 +120,11 @@ class CreationAlternative:
         name = None
 
         if self.type_series == 'STO':
-            name = "M" + "{:09d}".format(int(self.dss_name))
+            name = "M" + "{:09d}".format(int(float(self.dss_name)))
         return name
 
     def create_config_from(self,
-                        config_file) -> str:
+                           config_file) -> str:
         """
         Creates a new configuration file
 
