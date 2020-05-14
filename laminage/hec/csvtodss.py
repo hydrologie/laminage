@@ -6,10 +6,10 @@ import errno
 import shutil
 
 
-def csv_to_dss(csv_filename: str,
-               output_path: str = None,
-               sim_name: str = None,
-               start_date: str = "01JAN2001 00:00:00"):
+def _csv_to_dss(csv_filename: str,
+                output_path: str = None,
+                sim_name: str = None,
+                start_date: str = "01JAN2001 00:00:00"):
     """
     Converts csv file to equivalent file in hec format
 
@@ -43,12 +43,12 @@ def csv_to_dss(csv_filename: str,
                 raise
 
     dss_filename = os.path.join(output_path,
-                                sim_name + '.hec')
+                                sim_name + '.dss')
 
-    # copy empty.hec to dss_filename
+    # copy empty.dss to dss_filename
     shutil.copy2(os.path.join(os.path.dirname(__file__),
                               'templates',
-                              'empty.hec'),
+                              'empty.dss'),
                  dss_filename)
 
     # Prepare time-series data
