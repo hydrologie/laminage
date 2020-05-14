@@ -108,11 +108,13 @@ class BaseManager:
         Parameters
         ----------
         csv_directory : str
+            Folder where all .csv alternatives files are held
         client : Client
             Dask client that owns the dask.delayed() objects
 
         Returns
         -------
+        List of Futures
 
         """
         lazy_results = [dask.delayed(_csv_to_dss)(filename, os.path.join(self.project_path,
@@ -151,9 +153,6 @@ class BaseManager:
                 source_config_file : str
                     Path of the reference HEC ResSim model rss.conf file
 
-        Returns
-        -------
-
         """
         if not os.path.isdir(output_path):
             try:
@@ -181,14 +180,31 @@ class BaseManager:
 
         Parameters
         ----------
-        routing_config
-        client
-        output_path
-        dss_path
+        routing_config : dict
+            Dictionary should contain the following keys:
+                type_series : str
+                    Options available : FREQ (frequential analysis study),
+                                        PMF (probable maximum flood study),
+                                        HIST (historical time-series study),
+                                        STO (stochastical analysis study)
+                keys_link : dict
+                    Dictionary to link dss inflows with Hec ResSim's nomenclature
+                    Keys correspond to inflow names in Hec ResSim's model
+                    while values correspond to dss inflow names
+                source_ralt_file : str
+                    Path of a reference HEC ResSim model .ralt file
+                source_config_file : str
+                    Path of the reference HEC ResSim model rss.conf file
+        client : Client
+            Dask client that owns the dask.delayed() objects
+        output_path : str, default None
+            Directory where to create distributed base
+        dss_path : str, default None
+            Directory where all .dss alternatives are held
 
         Returns
         -------
-
+        List of Futures
         """
         if output_path is None:
             output_path = os.path.join(self.project_path,
