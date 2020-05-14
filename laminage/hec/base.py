@@ -12,19 +12,15 @@ from .csvtodss import _csv_to_dss
 
 class BaseManager:
     """
-    Handles all required steps to create an alternative
-    in order to compute simulations in HEC ResSim
+    Handles all required steps to create a distributed
+    HEC ResSim base
 
     Attributes
     ----------
-    dss_filename : str
-        Complete or relative path of dss filename
-    output_path : str
-        Folder directory to output alternatives files
-    dss_name : str
-        Specific dss name of dss filename
-    alternative_name : str
-        Equivalent alternative name in HEC ResSim nomenclature (10 caracters)
+    model_base_folder : str
+        Complete or relative path model base
+    project_path : str, default None
+        Project directory
 
     Examples
         --------
