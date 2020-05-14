@@ -111,9 +111,9 @@ class BaseManager:
 
         Parameters
         ----------
-        csv_directory
-        client
-            Dask client
+        csv_directory : str
+        client : Client
+            Dask client that owns the dask.delayed() objects
 
         Returns
         -------
