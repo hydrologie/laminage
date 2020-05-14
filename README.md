@@ -4,10 +4,21 @@ laminage est un programme permettant de simuler des centaines de milliers de sé
 
 
 ## Gestion de projet
-- [X] Conversion des fichiers csv vers dss en parallèle
-- [ ] Création des alternatives en parallèle (**en cours**)
+- [X] Conversion csv/dss distribué ([JIRA](https://jiraprd03.solutions.hydroquebec.com/browse/DEBIEHH-222))
+- [X] Création des alternatives en mode distribué ([JIRA](https://jiraprd03.solutions.hydroquebec.com/browse/DEBIEHH-223))
+- [ ] Création des simulations en mode distribué (**en cours**)
+- [ ] Appel des simulations en mode distribué
+- [ ] Compilation des résultats en mode distribué
+- [ ] Création des courbes guide en mode distribué
+- [ ] Mise à jour des courbes d'évacuation automatique
+- [ ] Mise à jour des courbes d'emmagasinement automatique
+- [ ] Mise en oeuvre du moteur de calcul du laminage automatique
+- [ ] Règles de gestion automatique
+- [ ] Tests du laminage stochastique distribué
+- [ ] Préparation des fichiers csv d'entrée de Prsim pour Hec-Ressim
 
-- Exemple d'une simulation complète : [note de calcul](notebooks/Preparation_et_simulation_HEC_ResSim_stochastique.ipynb) (**en cours**)
+Exemple d'une simulation : [note de calcul](notebooks/Preparation_et_simulation_HEC_ResSim_stochastique.ipynb) (**en cours**)
+
 
 
 ## Installation et configuration de l'environnement
