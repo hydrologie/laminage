@@ -198,7 +198,7 @@ class CreationAlternative:
                       'Name={}'.format(self.alternative_name),
                       'Description=',
                       'Path=rss/{}.ralt'.format(self.alternative_name),
-                      'Class=hec.model.RssAlt',
+                      'Class=hec.rss.model.RssAlt',
                       'Index={}'.format(idx_ralt),
                       'ModifiedTime={}'.format(str(modified_time + 50)),
                       'ManagerProxyEnd\n']
@@ -223,7 +223,7 @@ class CreationAlternative:
 
         malt_lines = ['ManagerProxyBegin',
                       'Name={}'.format(self.alternative_name),
-                      'Description=(Simulation Run)',
+                      'Description=(Simulation)',
                       'Path=rss/{}.malt'.format(self.alternative_name),
                       'Class=hec.model.ModelAlt',
                       'Index={}'.format(idx_malt),
@@ -234,7 +234,7 @@ class CreationAlternative:
                          'Name={}'.format(self.alternative_name),
                          'Description=(Simulation Run)',
                          'Path=rss/{}.simrun'.format(self.alternative_name),
-                         'Class=hec.model.RssSimRun',
+                         'Class=hec.rss.model.RssSimRun',
                          'Index={}'.format(idx_simrun),
                          'ModifiedTime={}'.format(str(modified_time + 150)),
                          'ManagerProxyEnd']
@@ -263,11 +263,11 @@ class CreationAlternative:
                 print("TSRecord Name={}".format(key), file=text_file)
                 print("TSRecord VariableId=4", file=text_file)
                 print("TSRecord ParamName=Flow", file=text_file)
-                print("TSRecord DssFilename=shared/{}".format(self.dss_name + '.hec'),
+                print("TSRecord DssFilename=shared/{}".format(self.dss_name + '.dss'),
                       file=text_file)
-                print("TSRecord DssPathname=/{}/CANIAPISCAU///1DAY/{}/".format(self.dss_name,
-                                                                               value,
-                                                                               self.dss_name),
+                print("TSRecord DssPathname=/{}/{}///1DAY/{}/".format(self.dss_name,
+                                                                       value,
+                                                                       self.dss_name),
                       file=text_file)
                 print("TSRecord InputPosition=0", file=text_file)
                 print("TSRecord End=\n", file=text_file)
@@ -317,7 +317,7 @@ class CreationAlternative:
                 elif i == 9:
                     print('  I={}'.format(idx_sim_run), file=text_file)
                 elif i == 15:
-                    print('  J='.format(mod_time), file=text_file)
+                    print('  J={}'.format(mod_time), file=text_file)
                 elif i == 17:
                     print('  STR={}'.format(self.alternative_name), file=text_file)
                 elif i == 27:
@@ -325,7 +325,7 @@ class CreationAlternative:
                 elif i == 33:
                     print('        I={}'.format(idx_malt), file=text_file)
                 else:
-                    print('{}'.format(line), file=text_file)
+                    print('{}'.format(line), end="", file=text_file)
 
     def creation_malt(self,
                       idx_ralt: str,
@@ -346,7 +346,7 @@ class CreationAlternative:
 
         """
         output_file = os.path.join(self.output_path,
-                                   self.alternative_name + '.simrun')
+                                   self.alternative_name + '.malt')
 
         with open(os.path.join(os.path.dirname(__file__),
                                'templates',
@@ -360,7 +360,7 @@ class CreationAlternative:
                 elif i == 9:
                     print('  I={}'.format(idx_malt), file=text_file)
                 elif i == 15:
-                    print('  J='.format(mod_time), file=text_file)
+                    print('  J={}'.format(mod_time), file=text_file)
                 elif i == 34:
                     print('  STR={}'.format(self.alternative_name), file=text_file)
                 elif i == 39:
@@ -368,7 +368,7 @@ class CreationAlternative:
                 elif i == 45:
                     print('    I={}'.format(idx_ralt), file=text_file)
                 else:
-                    print('{}'.format(line), file=text_file)
+                    print('{}'.format(line), end="", file=text_file)
 
     def creation_ralt(self,
                       ralt_file: str,
@@ -408,7 +408,7 @@ class CreationAlternative:
                 elif i == 16:
                     print('ObservedTSData Path=rss/{}Obs.fits'.format(self.alternative_name), file=text_file)
                 else:
-                    print('{}'.format(line), file=text_file)
+                    print('{}'.format(line), end="", file=text_file)
 
     def add_alternative(self,
                         ralt_file: str ):

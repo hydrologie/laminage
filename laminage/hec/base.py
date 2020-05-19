@@ -5,6 +5,8 @@ from dask_jobqueue import SLURMCluster
 from dask import compute, persist, delayed
 from dask.distributed import Client, progress
 import glob
+import shutil
+from distutils.dir_util import copy_tree
 
 from .alternatives import CreationAlternative as ca
 from .csvtodss import _csv_to_dss
@@ -124,8 +126,8 @@ class BaseManager:
                         for filename in glob.glob(csv_directory)]
         return client.compute(lazy_results)
 
-    @staticmethod
-    def create_partial_base(dss_list: list,
+    def create_partial_base(self,
+                            dss_list: list,
                             output_path: str,
                             routing_config: dict):
         """
@@ -160,15 +162,27 @@ class BaseManager:
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
-        alternatives_obj_list = [ca(dss_filename,
-                                    output_path,
-                                    routing_config['type_series'],
-                                    routing_config['keys_link'])
-                                 for dss_filename in dss_list]
+        copy_tree(self.model_base_folder,
+                  output_path)
 
-        alternatives_obj_list[0].create_config_from(routing_config['source_config_file'])
-        for alt in alternatives_obj_list:
-            alt.add_alternative(routing_config['source_ralt_file'])
+        [os.remove(f) for f in glob.glob(os.path.join(output_path, 'shared', '*.dss'))]
+
+        # [shutil.copy2(dss_filename, os.path.join(output_path, 'shared')) for dss_filename in dss_list]
+
+        min_sim_number = int(os.path.basename(dss_list[0]).split('.')[0]) - 1
+        [shutil.copy2(dss_filename, os.path.join(output_path, 'shared',
+                      "{:07d}".format(int(os.path.basename(dss_filename).split('.')[0]) - min_sim_number) + '.dss'))
+         for dss_filename in dss_list]
+
+        # alternatives_obj_list = [ca(dss_filename,
+        #                             os.path.join(output_path, 'rss'),
+        #                             routing_config['type_series'],
+        #                             routing_config['keys_link'])
+        #                          for dss_filename in dss_list]
+        #
+        # alternatives_obj_list[0].create_config_from(routing_config['source_config_file'])
+        # for alt in alternatives_obj_list:
+        #     alt.add_alternative(routing_config['source_ralt_file'])
 
     def create_distributed_base(self,
                                 routing_config: dict,
@@ -230,7 +244,7 @@ class BaseManager:
                     if e.errno != errno.EEXIST:
                         raise
 
-        dss_list = glob.glob(os.path.join(dss_path, '*.dss'))
+        dss_list = sorted(glob.glob(os.path.join(dss_path, '*.dss')))
 
         chunks = [dss_list[x:x + 100] for x in range(0, len(dss_list), 100)]
 

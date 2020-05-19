@@ -57,8 +57,8 @@ def _csv_to_dss(csv_filename: str,
     tsc.startDateTime = start_date
     tsc.numberValues = df.shape[0]
     tsc.units = "cfs"
-    tsc.type = "INST"
-    tsc.interval = 1 * 60
+    tsc.type = "INST-VAL"
+    tsc.interval = 24 * 60
     fid = HecDss.Open(dss_filename)
     # add each column time-series from dataframe to hec
     for column in df:
