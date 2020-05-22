@@ -7,8 +7,11 @@ from dask.distributed import Client, progress
 import glob
 import shutil
 from distutils.dir_util import copy_tree
+import subprocess
+from pathlib import Path
 
 from .alternatives import CreationAlternative as ca
+from .simulations import _save_simulation_values
 from .csvtodss import _csv_to_dss
 
 
@@ -126,10 +129,10 @@ class BaseManager:
                         for filename in glob.glob(csv_directory)]
         return client.compute(lazy_results)
 
-    def create_partial_base(self,
-                            dss_list: list,
-                            output_path: str,
-                            routing_config: dict):
+    def run_partial_base(self,
+                         dss_list: list,
+                         output_path: str,
+                         routing_config: dict):
         """
         Creates a HEC ResSim base from reference base with limited number of dss alternatives (for performance)
 
@@ -165,30 +168,79 @@ class BaseManager:
         copy_tree(self.model_base_folder,
                   output_path)
 
-        [os.remove(f) for f in glob.glob(os.path.join(output_path, 'shared', '*.dss'))]
+        result = list(Path(output_path).rglob("study"))
+        complete_output_path = os.path.realpath(str(result[0]).split('study')[0])
 
-        # [shutil.copy2(dss_filename, os.path.join(output_path, 'shared')) for dss_filename in dss_list]
+        [os.remove(f) for f in glob.glob(os.path.join(complete_output_path, 'shared', '*.dss'))]
 
+        # Add .dss files to shared and renumber from 000001 to match reference HEC ResSim base
         min_sim_number = int(os.path.basename(dss_list[0]).split('.')[0]) - 1
-        [shutil.copy2(dss_filename, os.path.join(output_path, 'shared',
+        [shutil.copy2(dss_filename, os.path.join(complete_output_path, 'shared',
                       "{:07d}".format(int(os.path.basename(dss_filename).split('.')[0]) - min_sim_number) + '.dss'))
          for dss_filename in dss_list]
 
-        # alternatives_obj_list = [ca(dss_filename,
-        #                             os.path.join(output_path, 'rss'),
-        #                             routing_config['type_series'],
-        #                             routing_config['keys_link'])
-        #                          for dss_filename in dss_list]
-        #
-        # alternatives_obj_list[0].create_config_from(routing_config['source_config_file'])
-        # for alt in alternatives_obj_list:
-        #     alt.add_alternative(routing_config['source_ralt_file'])
+        # TODO : update simulation.dss with all dss in shared
 
-    def create_distributed_base(self,
-                                routing_config: dict,
-                                client,
-                                output_path: str = None,
-                                dss_path: str = None):
+        # Run all alternatives in simulation for specific base
+        output_path_windows = ('C:' + complete_output_path.split('drive_c')[1]).replace('/', '\\\\')
+        self.run_sim(output_path_windows)
+
+        csv_output_path = os.path.join(self.project_path, '02_Calculs', 'Laminage_STO', '03_Resultats')
+        if not os.path.isdir(csv_output_path):
+            try:
+                os.makedirs(csv_output_path)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
+
+        alternative_names = ['M' + "%09d0" % (i,) for i in range(1, 101)]
+        _save_simulation_values(alternative_names=alternative_names,
+                                variable_type_list=routing_config['variable_type_list'],
+                                reservoir_list=routing_config['reservoir_list'],
+                                base_dir=output_path,
+                                csv_output_path=csv_output_path)
+
+        shutil.rmtree(output_path, ignore_errors=True)
+
+    def run_sim(self,
+                base_path: str,
+                hec_res_sim_exe_path: str = None):
+        """
+
+        Parameters
+        ----------
+        base_path : str
+        hec_res_sim_exe_path : str, default None
+
+        Returns
+        -------
+
+        """
+
+        if hec_res_sim_exe_path is None:
+            hec_res_sim_exe_path = os.path.join(os.environ['HOME'],
+                                                '.wine/drive_c/Program Files/HEC/HEC-ResSim/3.1/HEC-ResSim.exe')
+
+        try:
+            Path(hec_res_sim_exe_path).resolve(strict=True)
+        except FileNotFoundError:
+            print('HEC-ResSim.exe not found automatically. Please provide the hec_res_sim_path argument')
+        else:
+            shutil.copy2(os.path.join(os.path.dirname(__file__), 'templates', 'run_sim.py'),
+                         os.path.join(self.project_path, '02_Calculs', '01_Programmes'))
+
+            script_path = ('C:' + os.path.join(self.project_path, '02_Calculs',
+                                               '01_Programmes', 'run_sim.py').split('drive_c')[1]).replace('/', '\\\\')
+
+            command = "wine '%s' %s %s" % (hec_res_sim_exe_path, script_path, base_path)
+
+            subprocess.call(command, shell=True)
+
+    def run_distributed_simulations(self,
+                                    routing_config: dict,
+                                    client,
+                                    output_path: str = None,
+                                    dss_path: str = None):
         """
         Creates a distributed base to scale HEC ResSim simulations using the dask distributed client
 
@@ -248,10 +300,10 @@ class BaseManager:
 
         chunks = [dss_list[x:x + 100] for x in range(0, len(dss_list), 100)]
 
-        lazy_results = [dask.delayed(self.create_partial_base)(chunk,
-                                                               os.path.join(output_path,
-                                                                            "b{:06d}".format(idx + 1)),
-                                                               routing_config)
+        lazy_results = [dask.delayed(self.run_partial_base)(chunk,
+                                                            os.path.join(output_path,
+                                                                         "b{:06d}".format(idx + 1)),
+                                                            routing_config)
                         for idx, chunk in enumerate(chunks)]
 
         return client.compute(lazy_results)
