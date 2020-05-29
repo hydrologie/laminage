@@ -5,7 +5,7 @@ dependencies:
  - python=3.7*
  - pip=20
  - dask
- - dask-jobqueue
+ - dask_jobqueue
  - fsspec
  - gcsfs
  - geopandas
@@ -21,6 +21,6 @@ dependencies:
  - panel
  - scipy
  - pip :
-    -  dbfread
+    -git+https://github.com/gyanz/pydsstools.git
 
 
