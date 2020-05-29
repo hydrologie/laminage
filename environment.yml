@@ -21,6 +21,5 @@ dependencies:
  - panel
  - scipy
  - pip :
-    -https://github.com/gyanz/pydsstools.git
-
+   - "--editable=git+https://github.com/gyanz/pydsstools.git@master"
 
