@@ -21,6 +21,6 @@ dependencies:
  - panel
  - scipy
  - pip :
-    -git+https://github.com/gyanz/pydsstools.git
+    -https://github.com/gyanz/pydsstools.git
 
 
