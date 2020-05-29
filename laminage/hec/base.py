@@ -1,7 +1,6 @@
 import os
 import errno
 import dask
-from dask_jobqueue import SLURMCluster
 from dask import compute, persist, delayed
 from dask.distributed import Client, progress
 import glob
