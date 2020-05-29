@@ -2,7 +2,7 @@ name: laminage
 channels:
  - conda-forge
 dependencies:
- - python=3.7*
+ - python=3.8*
  - pip=20
  - dask
  - dask-jobqueue
