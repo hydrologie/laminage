@@ -175,7 +175,8 @@ class BaseManager:
         # Add .dss files to shared and renumber from 000001 to match reference HEC ResSim base
         min_sim_number = int(os.path.basename(dss_list[0]).split('.')[0]) - 1
         [shutil.copy2(dss_filename, os.path.join(complete_output_path, 'shared',
-                      "{:07d}".format(int(os.path.basename(dss_filename).split('.')[0]) - min_sim_number) + '.dss'))
+                                                 "{:07d}".format(int(os.path.basename(dss_filename).split('.')[
+                                                                         0]) - min_sim_number) + '.dss'))
          for dss_filename in dss_list]
 
         # TODO : update simulation.dss with all dss in shared
@@ -306,3 +307,72 @@ class BaseManager:
                         for idx, chunk in enumerate(chunks)]
 
         return client.compute(lazy_results)
+
+    def run_test_simulation(self,
+                            routing_config: dict,
+                            client,
+                            output_path: str = None,
+                            dss_path: str = None):
+        """
+        Creates a distributed base to scale HEC ResSim simulations using the dask distributed client
+
+        Parameters
+        ----------
+        routing_config : dict
+            Dictionary should contain the following keys:
+                type_series : str
+                    Options available : FREQ (frequential analysis study),
+                                        PMF (probable maximum flood study),
+                                        HIST (historical time-series study),
+                                        STO (stochastical analysis study)
+                keys_link : dict
+                    Dictionary to link dss inflows with Hec ResSim's nomenclature
+                    Keys correspond to inflow names in Hec ResSim's model
+                    while values correspond to dss inflow names
+                source_ralt_file : str
+                    Path of a reference HEC ResSim model .ralt file
+                source_config_file : str
+                    Path of the reference HEC ResSim model rss.conf file
+        client : Client
+            Dask client that owns the dask.delayed() objects
+        output_path : str, default None
+            Directory where to create distributed base
+        dss_path : str, default None
+            Directory where all .dss alternatives are held
+
+        Returns
+        -------
+        List of Futures
+        """
+        if output_path is None:
+            output_path = os.path.join(self.project_path,
+                                       '02_Calculs',
+                                       'Laminage_STO',
+                                       '02_Bases')
+            if not os.path.isdir(output_path):
+                try:
+                    os.makedirs(output_path)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+
+        if dss_path is None:
+            dss_path = os.path.join(self.project_path,
+                                    '01_Intrants',
+                                    'Series_stochastiques',
+                                    'dss')
+            if not os.path.isdir(dss_path):
+                try:
+                    os.makedirs(dss_path)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+
+        dss_list = sorted(glob.glob(os.path.join(dss_path, '*.dss')))
+
+        chunks = [dss_list[x:x + 100] for x in range(0, len(dss_list), 100)]
+
+        chunk = chunks[0]
+        idx = 0
+        self.run_partial_base(chunk, os.path.join(output_path, "b{:06d}".format(idx + 1)), routing_config)
+
