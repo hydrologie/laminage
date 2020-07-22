@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 from .alternatives import CreationAlternative as ca
-from .simulations import _save_simulation_values
+from .simulations import _read_dss_values, _save_simulation_values
 from .csvtodss import _csv_to_dss
 
 
@@ -180,6 +180,19 @@ class BaseManager:
          for dss_filename in dss_list]
 
         # TODO : update simulation.dss with all dss in shared
+        dss_filename_output = os.path.join(output_path, 'base/Outaouais_long/rss/simulation/simulation.dss')
+        shutil.copy2(os.path.join(os.path.dirname(__file__),
+                    'templates',
+                    'empty.dss'),
+                     dss_filename_output)
+        alternative_names = ["%07d.dss" % (i,) for i in range(1, 101)]
+        [_read_dss_values(alternative_basename=alternative_name,
+                          reservoir_id=nom_BV,
+                          base_dir=output_path,
+                          start_date="01JAN2001 00:00:00",
+                          end_date="30JUL2001 00:00:00")
+         for nom_BV in routing_config['reservoir_list']
+         for alternative_name in alternative_names]
 
         # Run all alternatives in simulation for specific base
         output_path_windows = ('C:' + complete_output_path.split('drive_c')[1]).replace('/', '\\\\')
@@ -308,6 +321,79 @@ class BaseManager:
 
         return client.compute(lazy_results)
 
+    def run_distributed_simulations_ext(self,
+                                       routing_config: dict,
+                                       client,
+                                       output_path: str = None,
+                                       dss_path: str = None):
+        """
+        Creates a distributed base to scale HEC ResSim simulations using the dask distributed client
+
+        Parameters
+        ----------
+        routing_config : dict
+            Dictionary should contain the following keys:
+                type_series : str
+                    Options available : FREQ (frequential analysis study),
+                                        PMF (probable maximum flood study),
+                                        HIST (historical time-series study),
+                                        STO (stochastical analysis study)
+                keys_link : dict
+                    Dictionary to link dss inflows with Hec ResSim's nomenclature
+                    Keys correspond to inflow names in Hec ResSim's model
+                    while values correspond to dss inflow names
+                source_ralt_file : str
+                    Path of a reference HEC ResSim model .ralt file
+                source_config_file : str
+                    Path of the reference HEC ResSim model rss.conf file
+        client : Client
+            Dask client that owns the dask.delayed() objects
+        output_path : str, default None
+            Directory where to create distributed base
+        dss_path : str, default None
+            Directory where all .dss alternatives are held
+
+        Returns
+        -------
+        List of Futures
+        """
+        if output_path is None:
+            output_path = os.path.join(self.project_path,
+                                       '02_Calculs',
+                                       'Laminage_STO',
+                                       '02_Bases')
+            if not os.path.isdir(output_path):
+                try:
+                    os.makedirs(output_path)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+
+        if dss_path is None:
+            dss_path = os.path.join(self.project_path,
+                                    '01_Intrants',
+                                    'Series_stochastiques',
+                                    'dss')
+            if not os.path.isdir(dss_path):
+                try:
+                    os.makedirs(dss_path)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+
+        dss_list = sorted(glob.glob(os.path.join(dss_path, '*.dss')))
+
+        chunks = [dss_list[x:x + 100] for x in range(0, len(dss_list), 100)]
+        chunks = [dss_list[0:100]]
+
+        lazy_results = [dask.delayed(self.run_partial_base)(chunk,
+                                                            os.path.join(output_path,
+                                                                         "b{:06d}".format(idx + 1)),
+                                                            routing_config)
+                        for idx, chunk in enumerate(chunks)]
+
+        return lazy_results
+
     def run_test_simulation(self,
                             routing_config: dict,
                             client,
@@ -374,5 +460,6 @@ class BaseManager:
 
         chunk = chunks[0]
         idx = 0
-        self.run_partial_base(chunk, os.path.join(output_path, "b{:06d}".format(idx + 1)), routing_config)
+        lazy_results = dask.delayed(self.run_partial_base)(chunk, os.path.join(output_path, "b{:06d}".format(idx + 1)), routing_config)
+        return client.compute(lazy_results)
 

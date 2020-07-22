@@ -22,4 +22,5 @@ dependencies:
  - scipy
  - pip :
    - "--editable=git+https://github.com/gyanz/pydsstools.git@master#egg=pydsstools"
+   - spotpy
 

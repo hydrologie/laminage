@@ -89,7 +89,7 @@ def openSimulation(simulationName):
     else:
         raise Exception('Could not open simulation "%s".' % simulationName)
 
-def runSimulations2():
+def runSimulations():
     simulationName='simulation'
 
     alternativeNames = ['M' + "%09d" % (i,) for i in range(1,101)]
@@ -107,7 +107,7 @@ def main():
     openWatershed(watershedDir)
     watershed = ResSim.getWatershed()
     watershedName = watershed.getName()
-    t = threading.Thread(target=runSimulations2)
+    t = threading.Thread(target=runSimulations)
     t.start()
 
 # =========================================================================

@@ -48,11 +48,66 @@ def _read_simulation_values(alternative_name: str,
     values = ts.values
     fid.close()
 
-    member_id = [int(alternative_name[1:-1]) + int(base_name[1:]) * 100 - 100] * len(values)
-    d = {'date': times, 'reservoir_id': [reservoir_id] * len(values), 'member_id': member_id, 'value': values}
+    member_id = [int(alternative_name[1:-1]) + int(base_name[1:]) * 100 - 100] * len(times)
+    d = {'date': times, 'reservoir_id': [reservoir_id] * len(times), 'member_id': member_id,
+         'variable_type': [variable_type] * len(times), 'value': values}
 
     return pd.concat([pd.Series(v, name=k) for k, v in d.items()], axis=1)
 
+
+def _read_dss_values(alternative_basename: str,
+                     reservoir_id: str,
+                     base_dir: str,
+                     start_date: str = "01JAN2001 00:00:00",
+                     end_date: str = "30JUL2001 00:00:00"):
+    """
+
+    Parameters
+    ----------
+    alternative_name
+    reservoir_id
+    variable_type
+    base_dir
+    start_date
+    end_date
+
+    Returns
+    -------
+
+    """
+
+    base_name = os.path.basename(base_dir)
+    # TODO : don't hardcode
+    dss_file = os.path.join(base_dir, 'base/Outaouais_long/shared/{}'.format(alternative_basename))
+    dss_filename_output = os.path.join(base_dir, 'base/Outaouais_long/rss/simulation/simulation.dss')
+
+    alternative_name = "{:07d}".format(int(base_name[1:]) * 100 - 100 + int(alternative_basename.split('.')[0]))
+
+    pathname = "/{}/{}///1DAY/{}/".format(alternative_name,
+                                          reservoir_id,
+                                          alternative_name)
+
+    fid = HecDss.Open(dss_file)
+    ts = fid.read_ts(pathname, window=(start_date, end_date), trim_missing=True)
+    values = ts.values
+    fid.close()
+
+    # Prepare time-series data
+    tsc = TimeSeriesContainer()
+    tsc.startDateTime = start_date
+    tsc.numberValues = len(values)
+    tsc.units = "cfs"
+    tsc.type = "INST-VAL"
+    tsc.interval = 24 * 60
+    with HecDss.Open(dss_filename_output) as fid:
+        # add each column time-series from dataframe to hec
+        pathname = "/{}/{}///1DAY/{}/".format(alternative_basename.split('.')[0],
+                                              reservoir_id, alternative_basename.split('.')[0])
+        print(pathname)
+        tsc.pathname = pathname
+        tsc.values = values
+        #     fid.deletePathname(tsc.pathname)
+        fid.put_ts(tsc)
 
 def _save_simulation_values(alternative_names: list,
                             variable_type_list: list,
