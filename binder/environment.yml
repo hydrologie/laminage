@@ -9,6 +9,7 @@ dependencies:
  - dask-jobqueue
  - fsspec
  - gcsfs
+ - s3fs
  - geopandas
  - holoviews
  - hvplot
