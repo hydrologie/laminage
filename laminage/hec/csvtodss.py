@@ -9,7 +9,7 @@ import shutil
 def _csv_to_dss(csv_filename: str,
                 output_path: str = None,
                 sim_name: str = None,
-                start_date: str = "01JAN2001 00:00:00"):
+                start_date: str = "01JAN2001 24:00:00"):
     """
     Converts csv file to equivalent file in hec format
 
@@ -53,10 +53,16 @@ def _csv_to_dss(csv_filename: str,
 
     # Prepare time-series data
     df = pd.read_csv(csv_filename)
+    if df.shape[0] > 0:
+        while df.shape[0] < 365:
+            df = df.append(df.iloc[-1, :])
+        df = df.reset_index().drop(columns=['index'])
+        df = df.round(decimals=2)
+
     tsc = TimeSeriesContainer()
     tsc.startDateTime = start_date
     tsc.numberValues = df.shape[0]
-    tsc.units = "cfs"
+    tsc.units = "cms"
     tsc.type = "INST-VAL"
     tsc.interval = 24 * 60
     fid = HecDss.Open(dss_filename)

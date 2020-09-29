@@ -1,6 +1,7 @@
 import os
 import errno
 import dask
+from shutil import copytree
 from dask import compute, persist, delayed
 from dask.distributed import Client, progress
 import glob
@@ -8,6 +9,7 @@ import shutil
 from distutils.dir_util import copy_tree
 import subprocess
 from pathlib import Path
+from send2trash import send2trash
 
 from .alternatives import CreationAlternative as ca
 from .simulations import _read_dss_values, _save_simulation_values
@@ -131,7 +133,8 @@ class BaseManager:
     def run_partial_base(self,
                          dss_list: list,
                          output_path: str,
-                         routing_config: dict):
+                         routing_config: dict,
+                         csv_output_path: str = None):
         """
         Creates a HEC ResSim base from reference base with limited number of dss alternatives (for performance)
 
@@ -140,7 +143,7 @@ class BaseManager:
         dss_list : list
             List of all dss alternatives to add to the current base
         output_path : str
-            Output bath where the new base should be created
+            Output path where the new base should be created
         routing_config : dict
             Dictionary should contain the following keys:
                 type_series : str
@@ -156,6 +159,8 @@ class BaseManager:
                     Path of a reference HEC ResSim model .ralt file
                 source_config_file : str
                     Path of the reference HEC ResSim model rss.conf file
+        csv_output_path : str
+            Directory to store csv results in
 
         """
         if not os.path.isdir(output_path):
@@ -164,8 +169,10 @@ class BaseManager:
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
-        copy_tree(self.model_base_folder,
-                  output_path)
+
+        copytree(self.model_base_folder,
+                 output_path,
+                 dirs_exist_ok=True)
 
         result = list(Path(output_path).rglob("study"))
         complete_output_path = os.path.realpath(str(result[0]).split('study')[0])
@@ -189,22 +196,14 @@ class BaseManager:
         [_read_dss_values(alternative_basename=alternative_name,
                           reservoir_id=nom_BV,
                           base_dir=output_path,
-                          start_date="01JAN2001 00:00:00",
-                          end_date="30JUL2001 00:00:00")
-         for nom_BV in routing_config['reservoir_list']
+                          start_date="01JAN2001 24:00:00",
+                          end_date="31DEC2001 24:00:00")
+         for nom_BV in [*routing_config['keys_link'].values()]
          for alternative_name in alternative_names]
 
         # Run all alternatives in simulation for specific base
         output_path_windows = ('C:' + complete_output_path.split('drive_c')[1]).replace('/', '\\\\')
         self.run_sim(output_path_windows)
-
-        csv_output_path = os.path.join(self.project_path, '02_Calculs', 'Laminage_STO', '03_Resultats')
-        if not os.path.isdir(csv_output_path):
-            try:
-                os.makedirs(csv_output_path)
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
 
         alternative_names = ['M' + "%09d0" % (i,) for i in range(1, 101)]
         _save_simulation_values(alternative_names=alternative_names,
@@ -213,7 +212,9 @@ class BaseManager:
                                 base_dir=output_path,
                                 csv_output_path=csv_output_path)
 
-        shutil.rmtree(output_path, ignore_errors=True)
+        # shutil.rmtree(output_path, ignore_errors=True)
+        send2trash(output_path)
+        os.system('rm -rf ~/.local/share/Trash/*')
 
     def run_sim(self,
                 base_path: str,
@@ -253,7 +254,8 @@ class BaseManager:
                                     routing_config: dict,
                                     client,
                                     output_path: str = None,
-                                    dss_path: str = None):
+                                    dss_path: str = None,
+                                    csv_output_path: str = None):
         """
         Creates a distributed base to scale HEC ResSim simulations using the dask distributed client
 
@@ -280,6 +282,8 @@ class BaseManager:
             Directory where to create distributed base
         dss_path : str, default None
             Directory where all .dss alternatives are held
+        csv_output_path : str
+            Directory to store csv results in
 
         Returns
         -------
@@ -308,6 +312,17 @@ class BaseManager:
                 except OSError as e:
                     if e.errno != errno.EEXIST:
                         raise
+        if csv_output_path is None:
+            csv_output_path = os.path.join(self.project_path,
+                                           '02_Calculs',
+                                           'Laminage_STO',
+                                           '03_Resultats')
+        if not os.path.isdir(csv_output_path):
+            try:
+                os.makedirs(csv_output_path)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
 
         dss_list = sorted(glob.glob(os.path.join(dss_path, '*.dss')))
 
@@ -316,7 +331,8 @@ class BaseManager:
         lazy_results = [dask.delayed(self.run_partial_base)(chunk,
                                                             os.path.join(output_path,
                                                                          "b{:06d}".format(idx + 1)),
-                                                            routing_config)
+                                                            routing_config,
+                                                            csv_output_path)
                         for idx, chunk in enumerate(chunks)]
 
         return client.compute(lazy_results)

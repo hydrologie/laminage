@@ -4,14 +4,16 @@ import numpy as np
 import os
 import pandas as pd
 from time import strptime
+from pydsstools.heclib.dss import HecDss
+from pydsstools.core import TimeSeriesContainer, UNDEFINED
 
 
 def _read_simulation_values(alternative_name: str,
                             reservoir_id: str,
                             variable_type: str,
                             base_dir: str,
-                            start_date: str = "01JAN2001 00:00:00",
-                            end_date: str = "30JUL2001 00:00:00"):
+                            start_date: str = "03JAN2001 00:00:00",
+                            end_date: str = "30DEC2001 00:00:00"):
     """
 
     Parameters
@@ -96,18 +98,18 @@ def _read_dss_values(alternative_basename: str,
     tsc = TimeSeriesContainer()
     tsc.startDateTime = start_date
     tsc.numberValues = len(values)
-    tsc.units = "cfs"
+    tsc.units = "cms"
     tsc.type = "INST-VAL"
     tsc.interval = 24 * 60
     with HecDss.Open(dss_filename_output) as fid:
         # add each column time-series from dataframe to hec
         pathname = "/{}/{}///1DAY/{}/".format(alternative_basename.split('.')[0],
                                               reservoir_id, alternative_basename.split('.')[0])
-        print(pathname)
         tsc.pathname = pathname
         tsc.values = values
         #     fid.deletePathname(tsc.pathname)
         fid.put_ts(tsc)
+
 
 def _save_simulation_values(alternative_names: list,
                             variable_type_list: list,
