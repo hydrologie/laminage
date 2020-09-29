@@ -1,3 +1,5 @@
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/hydrologie/laminage/master)
+
 # Laminage
 
 laminage est un programme permettant de simuler des centaines de milliers de séries stochastiques d'apports à l'aide du logiciel de gestion des réservoirs HEC ResSim.
