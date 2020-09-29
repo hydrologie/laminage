@@ -15,11 +15,14 @@ dependencies:
  - ipyleaflet
  - jupyter-panel-proxy
  - line_profiler
+ - send2trash
  - matplotlib-base
  - numpy
  - pandas
  - panel
  - scipy
+ - xarray
+ - zarr
  - pip :
    - "--editable=git+https://github.com/gyanz/pydsstools.git@master#egg=pydsstools"
    - spotpy
