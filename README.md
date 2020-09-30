@@ -9,11 +9,13 @@
 ## Ubuntu 20.04
 Git et Anaconda/Miniconda doivent préalablement être installé
 
+### Clone repository and install environnement
+
 ```bash
 git clone https://github.com/hydrologie/laminage.git
 cd laminage
 
-conda env update --name laminage --file environment.yml
+conda env create --name laminage --file binder/environment.yml
 ```
 ## Windows
 
