@@ -2,37 +2,24 @@
 
 # Laminage
 
-laminage est un programme permettant de simuler des centaines de milliers de séries stochastiques d'apports à l'aide du logiciel de gestion des réservoirs HEC ResSim.
+[laminage](https://github.com/hydrologie/laminage) is a simple framework built on top of [Dask](https://dask.org/) to scale the computation of hundreds of thousands of reservoir operations and water planning simulations. Most traditionnal reservoir modelling software (HEC ResSim, RiverWare, MODSIM, etc.) are single-threaded by design and are limited to Windows OS. [laminage](https://github.com/hydrologie/laminage) distributes the calculation of a user-provided HEC-ResSim model over to Dask workers in order to compute up to hundreds of simulations simultaneously either on a multi-core machine or a cluster of nodes. By using WINE, it is also possible to run [laminage](https://github.com/hydrologie/laminage) on Ubuntu and possibly other linux-based OS which is espacially convenient as most clusters run on linux.
 
+# Installation
 
-## Gestion de projet
-- [X] Conversion csv/dss distribué ([JIRA](https://jiraprd03.solutions.hydroquebec.com/browse/DEBIEHH-222))
-- [X] Création des alternatives en mode distribué ([JIRA](https://jiraprd03.solutions.hydroquebec.com/browse/DEBIEHH-223))
-- [X] Création des simulations en mode distribué
-- [X] Appel des simulations en mode distribué
-- [X] Compilation des résultats en mode distribué
-- [ ] Création des courbes guide en mode distribué (**en cours**)
-- [ ] Mise à jour des courbes d'évacuation automatique
-- [ ] Mise à jour des courbes d'emmagasinement automatique
-- [X] Mise en oeuvre du moteur de calcul du laminage automatique
-- [ ] Règles de gestion automatique
-- [ ] Tests du laminage stochastique distribué
-- [ ] Préparation des fichiers csv d'entrée de Prsim pour Hec-Ressim
-
-Exemple d'une simulation : [note de calcul](notebooks/Preparation_et_simulation_HEC_ResSim_stochastique.ipynb) (**en cours**)
-
-
-
-## Installation et configuration de l'environnement
-
+## Ubuntu 20.04
 Git et Anaconda/Miniconda doivent préalablement être installé
+
+### Clone repository and install environnement
 
 ```bash
 git clone https://github.com/hydrologie/laminage.git
 cd laminage
 
-conda env update --name laminage --file environment.yml
+conda env create --name laminage --file binder/environment.yml
 ```
+## Windows
+
+
 
 ## Utilisation
 
