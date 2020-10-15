@@ -4,12 +4,16 @@ import dask
 from shutil import copytree
 from dask import compute, persist, delayed
 from dask.distributed import Client, progress
+import numpy as np
 import glob
 import shutil
 from distutils.dir_util import copy_tree
 import subprocess
 from pathlib import Path
 from send2trash import send2trash
+import pandas as pd
+from pydsstools.heclib.dss import HecDss
+from pydsstools.core import PairedDataContainer
 
 from .alternatives import CreationAlternative as ca
 from .simulations import _read_dss_values, _save_simulation_values
@@ -109,7 +113,7 @@ class BaseManager:
                    csv_directory: str,
                    client):
         """
-        Convert all csv files in directory to dss files using the dask distributed client
+        Convert all csv files in directory to dss files using the dask distributed client for parallel processing
 
         Parameters
         ----------
@@ -129,6 +133,92 @@ class BaseManager:
                                                                          'dss'))
                         for filename in glob.glob(csv_directory)]
         return client.compute(lazy_results)
+
+    def update_storage(self,
+                       dss_network_filename: str,
+                       client,
+                       filepath: str = None,
+                       df: pd.DataFrame = None):
+        """
+
+        """
+
+        if df is not None:  # priority to the passed dataframe
+            filepath = None
+
+        if filepath is not None:
+            filepath = Path(filepath)
+            if not filepath.is_file():
+                raise FileNotFoundError(
+                    errno.ENOENT, os.strerror(errno.ENOENT), filepath)
+            df = pd.read_csv(filepath, header=[0, 1])
+
+        # verify that all series are monotonic
+        not_monotonic_series_names = verify_monotonic_values(df)
+        if not_monotonic_series_names.any():
+            raise ValueError('Reservoirs {} values are not monotonic.'.format(', '.join(not_monotonic_series_names)) +
+                             ' Please validate your input files.')
+
+        dss_simulation_files = glob.glob(os.path.join(self.model_base_folder, 'base', '*', 'rss', '*', 'rss',
+                                                      '*' + os.path.basename(dss_network_filename)))
+
+        dss_simulation_files.append(dss_network_filename)
+        print(dss_simulation_files)
+
+        lazy_results = [dask.delayed(self._update_storage)(filename, df)
+                        for filename in dss_simulation_files]
+        return client.compute(lazy_results)
+
+    @staticmethod
+    def _update_storage(dss_filename: str,
+                        df: pd.DataFrame = None):
+        """
+
+        """
+        # Dataframe to dss network (Storage)
+        param = "ELEV-STOR-AREA"
+        variable = 'POOL-AREA CAPACITY'
+
+        fid = HecDss.Open(dss_filename)
+
+        variable_types = df.columns.get_level_values(1).unique()  # (Elevation, Storage)
+
+        for watershed, variable_type in df:
+            if variable_type == variable_types[1]:
+                pdc = PairedDataContainer()
+                size = df[watershed].iloc[:, 1].dropna().values.shape[0]
+
+                pdc.pathname = '/%s/%s/%s////' % (watershed, variable, param)
+                pdc.curve_no = 2
+                pdc.data_no = size
+
+                pdc.independent_units = 'm'
+                pdc.independent_type = 'Elev'
+                pdc.independent_axis = df[watershed].iloc[:, 0].dropna().values
+
+                pdc.labels_list = ["0", "1"]
+                pdc.dependent_units = 'undef'
+                pdc.dependent_type = 'undef'
+                pdc.curves = np.vstack((df[watershed].iloc[:, 1].dropna().values.T,
+                                        -np.inf * np.ones(shape=(size)))).astype(dtype=np.float32)
+                fid.put_pd(pdc)
+        fid.close()
+
+    def read_storage(self, reservoir_list, dss_filename):
+        return pd.concat([self._read_pd_storage(reservoir, dss_filename) for reservoir in reservoir_list], axis=1)
+
+    @staticmethod
+    def _read_pd_storage(reservoir, dss_filename):
+        """
+
+        """
+        param = "ELEV-STOR-AREA"
+        variable = 'POOL-AREA CAPACITY'
+        with HecDss.Open(dss_filename) as fid:
+            pathname = '/%s/%s/%s////' % (reservoir, variable, param)
+            df = fid.read_pd(pathname).reset_index().iloc[:, 0:2]
+            df.columns = pd.MultiIndex.from_tuples(zip([reservoir, reservoir], ['Elevation', 'Volume']))
+        return df
 
     def run_partial_base(self,
                          dss_list: list,
@@ -203,7 +293,7 @@ class BaseManager:
 
         # Run all alternatives in simulation for specific base
         output_path_windows = ('C:' + complete_output_path.split('drive_c')[1]).replace('/', '\\\\')
-        self.run_sim(output_path_windows)
+        self._run_sim(output_path_windows)
 
         alternative_names = ['M' + "%09d0" % (i,) for i in range(1, 101)]
         _save_simulation_values(alternative_names=alternative_names,
@@ -216,9 +306,9 @@ class BaseManager:
         send2trash(output_path)
         os.system('rm -rf ~/.local/share/Trash/*')
 
-    def run_sim(self,
-                base_path: str,
-                hec_res_sim_exe_path: str = None):
+    def _run_sim(self,
+                 base_path: str,
+                 hec_res_sim_exe_path: str = None):
         """
 
         Parameters
@@ -410,72 +500,7 @@ class BaseManager:
 
         return lazy_results
 
-    def run_test_simulation(self,
-                            routing_config: dict,
-                            client,
-                            output_path: str = None,
-                            dss_path: str = None):
-        """
-        Creates a distributed base to scale HEC ResSim simulations using the dask distributed client
 
-        Parameters
-        ----------
-        routing_config : dict
-            Dictionary should contain the following keys:
-                type_series : str
-                    Options available : FREQ (frequential analysis study),
-                                        PMF (probable maximum flood study),
-                                        HIST (historical time-series study),
-                                        STO (stochastical analysis study)
-                keys_link : dict
-                    Dictionary to link dss inflows with Hec ResSim's nomenclature
-                    Keys correspond to inflow names in Hec ResSim's model
-                    while values correspond to dss inflow names
-                source_ralt_file : str
-                    Path of a reference HEC ResSim model .ralt file
-                source_config_file : str
-                    Path of the reference HEC ResSim model rss.conf file
-        client : Client
-            Dask client that owns the dask.delayed() objects
-        output_path : str, default None
-            Directory where to create distributed base
-        dss_path : str, default None
-            Directory where all .dss alternatives are held
-
-        Returns
-        -------
-        List of Futures
-        """
-        if output_path is None:
-            output_path = os.path.join(self.project_path,
-                                       '02_Calculs',
-                                       'Laminage_STO',
-                                       '02_Bases')
-            if not os.path.isdir(output_path):
-                try:
-                    os.makedirs(output_path)
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
-
-        if dss_path is None:
-            dss_path = os.path.join(self.project_path,
-                                    '01_Intrants',
-                                    'Series_stochastiques',
-                                    'dss')
-            if not os.path.isdir(dss_path):
-                try:
-                    os.makedirs(dss_path)
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
-
-        dss_list = sorted(glob.glob(os.path.join(dss_path, '*.dss')))
-
-        chunks = [dss_list[x:x + 100] for x in range(0, len(dss_list), 100)]
-
-        chunk = chunks[0]
-        idx = 0
-        lazy_results = dask.delayed(self.run_partial_base)(chunk, os.path.join(output_path, "b{:06d}".format(idx + 1)), routing_config)
-        return client.compute(lazy_results)
-
+def verify_monotonic_values(df):
+    df_is_monotonic = df.apply(lambda serie: serie.dropna().is_monotonic)
+    return df_is_monotonic.loc[df_is_monotonic == False].index.get_level_values(0)
