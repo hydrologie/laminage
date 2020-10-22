@@ -15,6 +15,7 @@ import pandas as pd
 from pydsstools.heclib.dss import HecDss
 from pydsstools.core import PairedDataContainer
 import panel as pn
+import hvplot.pandas
 
 from .alternatives import CreationAlternative as ca
 from .simulations import _read_dss_values, _save_simulation_values
@@ -135,8 +136,8 @@ class BaseManager:
             routing_config = {**routing_config, **_routing_config}
         self.routing_config = routing_config
 
-    @staticmethod
-    def csv_to_dss(csv_directory: str,
+    def csv_to_dss(self,
+                   csv_directory: str,
                    client,
                    dss_directory: str = None,
                    limit_nb_csv: int = None):
@@ -168,8 +169,10 @@ class BaseManager:
                 if e.errno != errno.EEXIST:
                     raise
 
-        lazy_results = [dask.delayed(_csv_to_dss)(filename, dss_directory)
-                        for filename in glob.glob(csv_directory)[:limit_nb_csv]]
+        lazy_results = [dask.delayed(_csv_to_dss)(csv_filename=filename,
+                                                  output_path=dss_directory,
+                                                  start_date=self.routing_config['lookup_date'])
+                        for filename in sorted(glob.glob(csv_directory))[:limit_nb_csv]]
         print('Dss files stored in path : {}'.format(dss_directory))
         return client.compute(lazy_results)
 
@@ -180,11 +183,7 @@ class BaseManager:
         """
         rss_directory = directory_find('rss', root=os.path.dirname(os.path.dirname(dss_filename_list[0])))
 
-        # Change when simulatiions will be created automatically
-        # Eventually, this should be called every time a new partial base is created to allow for maximum flexibility
         for idx, alt_filename in enumerate(dss_filename_list):
-            print(alt_filename)
-            print(rss_directory)
             alt = CreationAlternative(dss_filename=alt_filename,
                                       output_path=rss_directory,
                                       type_series=self.routing_config['type_series'],
@@ -505,6 +504,12 @@ class BaseManager:
                 if e.errno != errno.EEXIST:
                     raise
 
+        if csv_output_path is None:
+            csv_output_path = os.path.join(self.project_path,
+                                           '02_Calculs',
+                                           'Laminage_STO',
+                                           '03_Resultats')
+
         copytree(self.model_base_folder,
                  output_path,
                  dirs_exist_ok=True)
@@ -514,35 +519,12 @@ class BaseManager:
 
         [os.remove(f) for f in glob.glob(os.path.join(complete_output_path, 'shared', '*.dss'))]
 
-        # Add .dss files to shared and renumber from 000001 to match reference HEC ResSim base
-        # min_sim_number = int(os.path.basename(dss_list[0]).split('.')[0]) - 1
-        # [shutil.copy2(dss_filename, os.path.join(complete_output_path, 'shared',
-        #                                          "{:07d}".format(int(os.path.basename(dss_filename).split('.')[
-        #                                                                  0]) - min_sim_number) + '.dss'))
-        #  for dss_filename in dss_list]
-
         # Add .dss files to shared
         [shutil.copy2(dss_filename, os.path.join(complete_output_path, 'shared', os.path.basename(dss_filename)))
          for dss_filename in dss_list]
 
         # Create alternatives
         self.create_alternatives(glob.glob(os.path.join(complete_output_path, 'shared','*.dss')))
-
-        # to be deleted
-        # dss_filename_output = os.path.join(output_path, 'base/Outaouais_long/rss/simulation/simulation.dss')
-        # shutil.copy2(os.path.join(os.path.dirname(__file__),
-        #                           'templates',
-        #                           'empty.dss'),
-        #              dss_filename_output)
-        # alternative_names = ["%07d.dss" % (i,) for i in range(1, 101)]
-        # [_read_dss_values(alternative_basename=alternative_name,
-        #                   reservoir_id=nom_BV,
-        #                   base_dir=output_path,
-        #                   start_date="01JAN2001 24:00:00",
-        #                   end_date="31DEC2001 24:00:00")
-        #  for nom_BV in [*routing_config['keys_link'].values()]
-        #  for alternative_name in alternative_names]
-        #- to be deleted
 
         # Pass alternatives list to compute
         with open(os.path.join(complete_output_path,
@@ -563,15 +545,15 @@ class BaseManager:
         # Run all alternatives in simulation for specific base
         output_path_windows = ('C:' + complete_output_path.split('drive_c')[1]).replace('/', '\\\\')
         self._run_sim(output_path_windows)
-        #
-        # alternative_names = ['M' + "%09d0" % (i,) for i in range(1, 101)]
+
         _save_simulation_values(alternative_names=alternative_list,
                                 variable_type_list=self.routing_config['variable_type_list'],
                                 reservoir_list=list(self.read_capacity().columns.get_level_values(0).unique()),
                                 base_dir=output_path,
-                                csv_output_path=csv_output_path)
+                                csv_output_path=csv_output_path,
+                                start_date=self.routing_config['start_date'],
+                                end_date=self.routing_config['end_date'])
 
-        # shutil.rmtree(output_path, ignore_errors=True)
         send2trash(output_path)
         os.system('rm -rf ~/.local/share/Trash/*')
 
@@ -610,7 +592,6 @@ class BaseManager:
             subprocess.call(command, shell=True)
 
     def run_distributed_simulations(self,
-                                    routing_config: dict,
                                     client,
                                     dss_path,
                                     output_path: str = None,
@@ -692,7 +673,6 @@ class BaseManager:
         lazy_results = [dask.delayed(self.run_partial_base)(chunk,
                                                             os.path.join(output_path,
                                                                          "b{:06d}".format(idx + 1)),
-                                                            routing_config,
                                                             csv_output_path)
                         for idx, chunk in enumerate(chunks(dss_list, n))]
 

@@ -432,7 +432,7 @@ class CreationAlternative:
             for idx, row in df.set_index('name').join(df_init.set_index('name')).sort_values('line_number').iterrows():
 
                 if row.type == 'Pool':
-                    print('Hindcast=~E{}:F;14;1;{}'.format(row.object_id, 100.00), file=text_file)
+                    print('Hindcast=~E{}:F;14;1;{}'.format(row.object_id, row.value), file=text_file)
                     print('Hindcast=~E{}:F;15;2;-Infinity'.format(row.object_id), file=text_file)
                 else:
                     print('Hindcast=~E{}:F;41;1;{}'.format(row.object_id, 0.0), file=text_file)

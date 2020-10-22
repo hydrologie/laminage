@@ -30,12 +30,14 @@ def _read_simulation_values(alternative_name: str,
 
     """
     base_name = os.path.basename(base_dir)
-    # TODO : don't hardcode
-    dss_file = os.path.join(base_dir, 'base/Outaouais_long/rss/simulation/simulation.dss')
+    # TODO : don't hardcode, should pass simulation name
+    dss_file = os.path.join(base_dir, 'base/Outaouais_long/rss/sim_batch/simulation.dss')
+    print(dss_file)
 
     pathname = "//{}-POOL/{}//1DAY/{}/".format(reservoir_id,
                                                variable_type,
-                                               alternative_name)
+                                               alternative_name + '0')
+    print(pathname)
     startDate = start_date
     endDate = end_date
 
@@ -50,7 +52,7 @@ def _read_simulation_values(alternative_name: str,
     values = ts.values
     fid.close()
 
-    member_id = [int(alternative_name[1:-1]) + int(base_name[1:]) * 100 - 100] * len(times)
+    member_id = [int(alternative_name[1:])] * len(times)
     d = {'date': times, 'reservoir_id': [reservoir_id] * len(times), 'member_id': member_id,
          'variable_type': [variable_type] * len(times), 'value': values}
 
@@ -115,7 +117,10 @@ def _save_simulation_values(alternative_names: list,
                             variable_type_list: list,
                             reservoir_list: list,
                             base_dir: str,
-                            csv_output_path: str):
+                            csv_output_path: str,
+                            start_date: str,
+                            end_date: str
+                            ):
     """
 
     Parameters
@@ -124,18 +129,23 @@ def _save_simulation_values(alternative_names: list,
     variable_type_list
     reservoir_list
     base_dir
-    output_path
+    csv_output_path
 
     Returns
     -------
 
     """
-    alternatives_chunks = [alternative_names[x:x + 10] for x in range(0, len(alternative_names), 10)]
-    for alternative_chunk in alternatives_chunks:
+
+    # This is only intended for stochastic simulations. Adapt to the general case.
+
+    # alternatives_chunks = [alternative_names[x:x + 10] for x in range(0, len(alternative_names), 10)]
+    for alternative_chunk in chunks(sorted(alternative_names), 10):
         df = pd.concat([_read_simulation_values(alternative_name,
                                                 reservoir_id,
                                                 variable_type,
-                                                base_dir)
+                                                base_dir,
+                                                start_date,
+                                                end_date)
                         for alternative_name in alternative_chunk
                         for variable_type in variable_type_list
                         for reservoir_id in reservoir_list])
@@ -143,3 +153,8 @@ def _save_simulation_values(alternative_names: list,
                                + '_' + "{:07d}".format(int(df['member_id'].max())) + '.csv'),
                   index=False)
 
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
