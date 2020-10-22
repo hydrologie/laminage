@@ -1,5 +1,7 @@
 import os
 import errno
+import pandas as pd
+import numpy as np
 
 
 class CreationAlternative:
@@ -75,6 +77,8 @@ class CreationAlternative:
                  output_path: str = None,
                  type_series: str = None,
                  keys_link: dict = None,
+                 dss_capacity_filename: str = None,
+                 rsys_filename: str = None
                  ):
         """
 
@@ -103,7 +107,10 @@ class CreationAlternative:
         self.output_path: str = output_path
         self.type_series: str = type_series
         self.keys_link: dict = keys_link
-        self.alternative_name = self.get_alternative_name()
+        self.dss_capacity_filename: str = dss_capacity_filename
+        self.rsys_filename: str = rsys_filename
+        self.alternative_name = self.get_alternative_name(self.dss_name,
+                                                          type_series)
 
         if not os.path.isdir(self.output_path):
             try:
@@ -112,15 +119,18 @@ class CreationAlternative:
                 if e.errno != errno.EEXIST:
                     raise
 
-    def get_alternative_name(self):
+    @classmethod
+    def get_alternative_name(cls,
+                             dss_name,
+                             type_series):
         """
         Transforms name to HEC DSSVue nomenclature (10 characters)
 
         """
         name = None
 
-        if self.type_series == 'STO':
-            name = "M" + "{:09d}".format(int(float(self.dss_name)))
+        if type_series == 'STO':
+            name = "M" + "{:09d}".format(int(float(dss_name)))
         return name
 
     def create_config_from(self,
@@ -371,7 +381,8 @@ class CreationAlternative:
                     print('{}'.format(line), end="", file=text_file)
 
     def creation_ralt(self,
-                      ralt_file: str,
+                      df,
+                      df_init,
                       flow_compute_type: str = "2",
                       ):
         """
@@ -394,13 +405,17 @@ class CreationAlternative:
         output_file = os.path.join(self.output_path,
                                    self.alternative_name + '.ralt')
 
-        with open(ralt_file, 'r') as f:
+        with open(os.path.join(os.path.dirname(__file__),
+                               'templates',
+                               'ralt_template.txt'), 'r') as f:
             lines = f.readlines()
 
         with open(output_file, 'w') as text_file:
             for i, line in enumerate(lines, 1):  # numbering starts at 1
                 if i == 1:
                     print("RssAlt Name={}".format(self.alternative_name), file=text_file)
+                elif i == 6:
+                    print('System Path=rss/{}'.format(os.path.basename(self.rsys_filename)), file=text_file)
                 elif i == 8:
                     print('InputTSData Path=rss/{}.fits'.format(self.alternative_name), file=text_file)
                 elif i == 10:
@@ -410,15 +425,28 @@ class CreationAlternative:
                 else:
                     print('{}'.format(line), end="", file=text_file)
 
+        with open(output_file, 'a') as text_file:
+            for idx, value in df[['name', 'object_parent_id']].drop_duplicates().set_index('name').iterrows():
+                print('resOpSelection={},0'.format(value.values[0]), file=text_file)
+
+            for idx, row in df.set_index('name').join(df_init.set_index('name')).sort_values('line_number').iterrows():
+
+                if row.type == 'Pool':
+                    print('Hindcast=~E{}:F;14;1;{}'.format(row.object_id, 100.00), file=text_file)
+                    print('Hindcast=~E{}:F;15;2;-Infinity'.format(row.object_id), file=text_file)
+                else:
+                    print('Hindcast=~E{}:F;41;1;{}'.format(row.object_id, 0.0), file=text_file)
+
     def add_alternative(self,
-                        ralt_file: str ):
+                        dataframe,
+                        dataframe_initial_conditions):
         """
         Adds alternative files to output path and update configuration file
 
         Parameters
         ----------
-        ralt_file (str)
-            Path of ralt file
+        dataframe (df)
+            Table of network connectivity
 
         Returns
         -------
@@ -428,10 +456,12 @@ class CreationAlternative:
 
         self.creation_fits()
         self.creation_obs()
-        self.creation_ralt(ralt_file)
+        self.creation_ralt(dataframe, dataframe_initial_conditions)
         self.creation_malt(idx_ralt=idx_ralt,
                            idx_malt=idx_malt,
                            mod_time=mod_time)
         self.creation_simrun(idx_sim_run=idx_simrun,
                              idx_malt=idx_malt,
                              mod_time=mod_time)
+
+

@@ -1,0 +1,16 @@
+RssAlt Name=M000000001
+RssAlt Description=
+Version=1001
+ModifiedTime=1603309385370
+NetworkID=2
+System Path=rss/Outaouais_long.rsys
+Operations Path=
+InputTSData Path=rss/M000000001.fits
+OutputTSData Path=
+FlowComputeType=2
+ComputeHoldouts=false
+ComputeUnreg=true
+LogLevel=3
+TimeStep=1
+TimeIncrement=3
+ObservedTSData Path=rss/M000000001Obs.fits

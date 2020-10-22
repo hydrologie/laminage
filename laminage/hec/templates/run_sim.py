@@ -89,20 +89,67 @@ def openSimulation(simulationName):
     else:
         raise Exception('Could not open simulation "%s".' % simulationName)
 
+def createSimulation():
+    """
+
+    """
+    alternativeNames = []
+    filename = os.path.join(watershedDir, 'alternatives.txt')
+    print(filename)
+    fh = open(filename, 'r')
+    lines = fh.readlines()
+    # print '%s' % (lines)
+    fh.close()
+
+    for i, line in enumerate(lines):
+        if i == 0:
+            lookback_date = line.split('\n')[0]
+        elif i == 1:
+            start_date = line.split('\n')[0]
+        elif i ==2:
+            end_date = line.split('\n')[0]
+        else:
+            alternativeNames.append(line.split('\n')[0])
+
+    module = ResSim.getCurrentModule()
+    a = module.createSimulation("sim_batch", "test_desc", lookback_date, start_date, end_date, 1, 2,
+                                alternativeNames)
 def runSimulations():
-    simulationName='simulation'
 
-    alternativeNames = ['M' + "%09d" % (i,) for i in range(1,101)]
+    alternativeNames = []
+    filename = os.path.join(watershedDir, 'alternatives.txt')
+    print(filename)
+    fh = open(filename, 'r')
+    lines = fh.readlines()
+    # print '%s' % (lines)
+    fh.close()
 
+    for i, line in enumerate(lines):
+        if i == 0:
+            lookback_date = line.split('\n')[0]
+        elif i == 1:
+            start_date = line.split('\n')[0]
+        elif i ==2:
+            end_date = line.split('\n')[0]
+        else:
+            alternativeNames.append(line.split('\n')[0])
+
+
+    simulationName='sim_batch'
+
+    # alternativeNames = ['M' + "%09d" % (i,) for i in range(1,101)]
+    # alternativeNames = ['M000052145']
+    createSimulation()
+    simulation = openSimulation(simulationName)
     for alternativeName in alternativeNames:
-        simulation = openSimulation(simulationName)
         simRun = simulation.getSimulationRun(alternativeName)
         simulation.computeRun(simRun, -1)
         ResSim.getCurrentModule().saveSimulation()
 
 # =========================================================================
 def main():
-    simulationName = 'simulation'
+
+    simulationName = 'sim_batch'
     simModule = setModule("Simulation")
     openWatershed(watershedDir)
     watershed = ResSim.getWatershed()
