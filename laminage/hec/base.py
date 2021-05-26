@@ -544,7 +544,8 @@ class BaseManager:
 
         # Run all alternatives in simulation for specific base
         output_path_windows = ('C:' + complete_output_path.split('drive_c')[1]).replace('/', '\\\\')
-        self._run_sim(output_path_windows)
+        self._run_sim(base_path=output_path_windows,
+                      hec_res_sim_exe_path=self.routing_config['hec_res_sim_exe_path'])
 
         _save_simulation_values(alternative_names=alternative_list,
                                 variable_type_list=self.routing_config['variable_type_list'],
@@ -555,7 +556,6 @@ class BaseManager:
                                 end_date=self.routing_config['end_date'])
 
         send2trash(output_path)
-        os.system('rm -rf ~/.local/share/Trash/*')
 
     def _run_sim(self,
                  base_path: str,
@@ -586,8 +586,12 @@ class BaseManager:
 
             script_path = ('C:' + os.path.join(self.project_path, '02_Calculs',
                                                '01_Programmes', 'run_sim.py').split('drive_c')[1]).replace('/', '\\\\')
+            print(script_path)
 
-            command = "wine '%s' %s %s" % (hec_res_sim_exe_path, script_path, base_path)
+            if os.name == 'nt':
+                command = "%s' %s %s" % (hec_res_sim_exe_path, script_path, base_path)
+            else:
+                command = "wine '%s' %s %s" % (hec_res_sim_exe_path, script_path, base_path)
 
             subprocess.call(command, shell=True)
 
