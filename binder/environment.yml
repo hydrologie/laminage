@@ -27,6 +27,6 @@ dependencies:
  - xarray
  - zarr
  - pip :
-   - git+https://github.com/gyanz/pydsstools.git@master
+   - git+https://github.com/gyanz/pydsstools/zipball/master
    - spotpy
 
