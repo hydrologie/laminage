@@ -27,6 +27,6 @@ dependencies:
  - xarray
  - zarr
  - pip :
-   - "--editable=git+https://github.com/gyanz/pydsstools.git@master#egg=pydsstools"
+   - git+https://github.com/gyanz/pydsstools.git@master
    - spotpy
 
