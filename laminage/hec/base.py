@@ -591,7 +591,7 @@ class BaseManager:
             if os.name == 'nt':
                 command = "%s' %s %s" % (hec_res_sim_exe_path, script_path, base_path)
             else:
-                command = "wine '%s' %s %s" % (hec_res_sim_exe_path, script_path, base_path)
+                command = "%s '%s' %s %s" % (self.routing_config.wine_path, hec_res_sim_exe_path, script_path, base_path)
 
             subprocess.call(command, shell=True)
 
