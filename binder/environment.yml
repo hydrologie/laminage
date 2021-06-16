@@ -26,9 +26,9 @@ dependencies:
  - panel
  - tiledb-py
  - scipy
- - xarray
  - zarr
  - pip :
    - git+https://github.com/hydrologie/pydsstools.git
    - spotpy
+   - xarray[complete]
 
