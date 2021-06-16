@@ -1,4 +1,4 @@
-name: laminage-slurm
+name: laminage
 channels:
  - conda-forge
 dependencies:
