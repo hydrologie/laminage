@@ -5,6 +5,7 @@ dependencies:
  - python=3.8*
  - pip=20
  - appmode
+ - bottleneck
  - dask
  - dask-jobqueue
  - fsspec
@@ -19,6 +20,7 @@ dependencies:
  - line_profiler
  - send2trash
  - matplotlib-base
+ - netcdf4
  - numpy
  - pandas
  - panel
@@ -26,6 +28,7 @@ dependencies:
  - scipy
  - xarray
  - zarr
+ netCDF4 bottleneck
  - pip :
    - git+https://github.com/hydrologie/pydsstools.git
    - spotpy
