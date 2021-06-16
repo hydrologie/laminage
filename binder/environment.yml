@@ -28,7 +28,6 @@ dependencies:
  - scipy
  - xarray
  - zarr
- netCDF4 bottleneck
  - pip :
    - git+https://github.com/hydrologie/pydsstools.git
    - spotpy
