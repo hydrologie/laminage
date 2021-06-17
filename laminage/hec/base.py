@@ -547,6 +547,7 @@ class BaseManager:
         self._run_sim(base_path=output_path_windows,
                       hec_res_sim_exe_path=self.routing_config['hec_res_sim_exe_path'])
 
+        print('HEC-ResSim computing done..')
         _save_simulation_values(alternative_names=alternative_list,
                                 variable_type_list=self.routing_config['variable_type_list'],
                                 reservoir_list=list(self.read_capacity().columns.get_level_values(0).unique()),
