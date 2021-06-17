@@ -547,7 +547,6 @@ class BaseManager:
         self._run_sim(base_path=output_path_windows,
                       hec_res_sim_exe_path=self.routing_config['hec_res_sim_exe_path'])
 
-        print('HEC-ResSim computing done..')
         _save_simulation_values(alternative_names=alternative_list,
                                 variable_type_list=self.routing_config['variable_type_list'],
                                 reservoir_list=list(self.read_capacity().columns.get_level_values(0).unique()),
@@ -587,8 +586,6 @@ class BaseManager:
 
             script_path = ('C:' + os.path.join(self.project_path, '02_Calculs',
                                                '01_Programmes', 'run_sim.py').split('drive_c')[1]).replace('/', '\\\\')
-            print(script_path)
-
             if os.name == 'nt':
                 command = "%s' %s %s" % (hec_res_sim_exe_path, script_path, base_path)
             else:
